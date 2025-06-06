@@ -22,7 +22,7 @@ jobs:
       run: pip install -r MLProject/requirements.txt
 
     - name: Run MLflow Project
-      run: mlflow run MLProject/
+      run: mlflow run MLProject/ --env-manager local
       
     - name: Get latest MLflow run_id
       id: get_run_id
