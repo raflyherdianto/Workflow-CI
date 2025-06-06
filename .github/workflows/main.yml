@@ -33,7 +33,7 @@ jobs:
 
     # 4. Menjalankan MLflow Project untuk melatih model
     - name: Run MLflow Project for Training
-      run: mlflow run MLProject/
+      run: mlflow run MLProject/ --no-conda
 
     # 5. Membaca Run ID dari file untuk digunakan di langkah selanjutnya
     - name: Read Run ID from file
@@ -64,14 +64,13 @@ jobs:
         # Mengambil RUN_ID dari output langkah sebelumnya
         RUN_ID=${{ steps.get_run_id.outputs.RUN_ID }}
         echo "Building Docker image for Run ID: $RUN_ID"
+
+        MODEL_FOLDER_NAME="tuned_model"
         
-        # Menentukan nama image: <username_dockerhub>/<nama_repo_docker>:<tag>
-        # Menggunakan 12 karakter pertama dari RUN_ID sebagai tag agar unik.
         IMAGE_NAME="${{ secrets.DOCKERHUB_USERNAME }}/workflow-ci-revenue-predictor:${RUN_ID:0:12}"
         
-        # Perintah MLflow untuk membangun Docker image dari model yang tersimpan
-        # Path ke model URI harus tepat menunjuk ke artifak model di dalam folder mlruns
-        mlflow models build-docker --model-uri "MLProject/mlruns/0/${RUN_ID}/artifacts/tuned_model" --name "$IMAGE_NAME"
+        # Pastikan path ke model URI benar. '0' adalah ID eksperimen default.
+        mlflow models build-docker --model-uri "MLProject/mlruns/0/${RUN_ID}/artifacts/${MODEL_FOLDER_NAME}" --name "$IMAGE_NAME"
 
         echo "Pushing Docker image: $IMAGE_NAME"
         docker push "$IMAGE_NAME"
