@@ -17,16 +17,17 @@ jobs:
       uses: conda-incubator/setup-miniconda@v3
       with:
         auto-activate-base: false
-        python-version: 3.13
+        python-version: 3.9
 
-    - name: Show Conda Info
+    - name: Install MLflow CLI in base environment
       shell: bash -l {0}
-      run: conda info
+      run: pip install mlflow
       
     - name: Run MLflow Project for Training
-      shell: bash -l {0} 
+      shell: bash -l {0}
       run: mlflow run MLProject/
 
+    # Langkah selanjutnya tetap sama...
     - name: Read Run ID from file
       id: get_run_id
       run: echo "RUN_ID=$(cat MLProject/mlflow_run_id.txt)" >> $GITHUB_OUTPUT
