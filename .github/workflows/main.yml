@@ -17,7 +17,7 @@ jobs:
       uses: conda-incubator/setup-miniconda@v3
       with:
         auto-activate-base: false
-        python-version: 3.9
+        python-version: 3.13
 
     - name: Install MLflow CLI in base environment
       shell: bash -l {0}
@@ -47,6 +47,7 @@ jobs:
         password: ${{ secrets.DOCKERHUB_TOKEN }}
 
     - name: Build and Push Docker image with MLflow
+      shell: bash -l {0}
       run: |
         RUN_ID=${{ steps.get_run_id.outputs.RUN_ID }}
         echo "Building Docker image for Run ID: $RUN_ID"
@@ -55,6 +56,7 @@ jobs:
         
         IMAGE_NAME="${{ secrets.DOCKERHUB_USERNAME }}/workflow-ci-revenue-predictor:${RUN_ID:0:12}"
         
+        # Sekarang perintah mlflow akan ditemukan
         mlflow models build-docker --model-uri "MLProject/mlruns/0/${RUN_ID}/artifacts/${MODEL_FOLDER_NAME}" --name "$IMAGE_NAME"
 
         echo "Pushing Docker image: $IMAGE_NAME"
