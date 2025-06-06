@@ -1,4 +1,4 @@
-name: MLflow CI-CD with Conda Environment
+name: MLflow CI-CD with Python Pip
 
 on:
   push:
@@ -13,50 +13,50 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Set up Miniconda
-      uses: conda-incubator/setup-miniconda@v3
+    - name: Set up Python
+      uses: actions/setup-python@v5
       with:
-        auto-activate-base: false
-        python-version: 3.13
+        python-version: '3.13'
 
-    - name: Install MLflow CLI in base environment
-      shell: bash -l {0}
-      run: pip install mlflow
-      
-    - name: Run MLflow Project for Training
-      shell: bash -l {0}
+    - name: Install dependencies from requirements.txt
+      run: pip install -r MLProject/requirements.txt
+
+    - name: Run MLflow Project
       run: mlflow run MLProject/
-
-    - name: Read Run ID from file
+      
+    - name: Get latest MLflow run_id
       id: get_run_id
       run: echo "RUN_ID=$(cat MLProject/mlflow_run_id.txt)" >> $GITHUB_OUTPUT
 
-    - name: Store MLflow runs as artifacts
+    - name: Upload MLflow artifacts to GitHub
       uses: actions/upload-artifact@v4
       with:
-        name: mlflow-runs-and-id
-        path: |
-          mlruns/ # Path ke mlruns di root
-          MLProject/mlflow_run_id.txt
+        name: mlflow-runs
+        path: mlruns/
         if-no-files-found: error
 
-    - name: Login to Docker Hub
+    - name: Log in to Docker Hub
       uses: docker/login-action@v3
       with:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-    - name: Build and Push Docker image with MLflow
-      shell: bash -l {0}
+    - name: Build Docker Model and Push to Hub
       run: |
         RUN_ID=${{ steps.get_run_id.outputs.RUN_ID }}
         echo "Building Docker image for Run ID: $RUN_ID"
         
         MODEL_FOLDER_NAME="tuned_model"
-        
         IMAGE_NAME="${{ secrets.DOCKERHUB_USERNAME }}/workflow-ci-revenue-predictor:${RUN_ID:0:12}"
+        MODEL_URI="mlruns/0/${RUN_ID}/artifacts/${MODEL_FOLDER_NAME}"
         
-        mlflow models build-docker --model-uri "mlruns/0/${RUN_ID}/artifacts/${MODEL_FOLDER_NAME}" --name "$IMAGE_NAME"
-
+        # Periksa apakah direktori model ada sebelum build
+        if [ ! -d "$MODEL_URI" ]; then
+          echo "Error: Model directory not found at $MODEL_URI"
+          exit 1
+        fi
+        
+        mlflow models build-docker --model-uri "$MODEL_URI" --name "$IMAGE_NAME"
+        
         echo "Pushing Docker image: $IMAGE_NAME"
         docker push "$IMAGE_NAME"
