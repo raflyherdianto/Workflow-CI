@@ -27,7 +27,6 @@ jobs:
       shell: bash -l {0}
       run: mlflow run MLProject/
 
-    # Langkah selanjutnya tetap sama...
     - name: Read Run ID from file
       id: get_run_id
       run: echo "RUN_ID=$(cat MLProject/mlflow_run_id.txt)" >> $GITHUB_OUTPUT
