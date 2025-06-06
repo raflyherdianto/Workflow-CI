@@ -64,8 +64,7 @@ def train_and_tune_model(data_path):
 
     print("\n--- Memulai Logging ke MLflow ---")
     
-    active_run = mlflow.active_run()
-    run_id = active_run.info.run_id if active_run else "default_run"
+    run_id = os.environ.get("MLFLOW_RUN_ID")
     print(f"Logging ke MLflow Run ID: {run_id}")
 
     mlflow.log_params(best_params)
@@ -92,6 +91,7 @@ def train_and_tune_model(data_path):
     mlflow.log_artifact(plot_path, "feature_plots")
     os.remove(plot_path)
     
+    # Tetap tulis run_id yang sekarang sudah benar ke file
     with open("mlflow_run_id.txt", "w") as f:
         f.write(run_id)
 
