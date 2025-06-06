@@ -1,6 +1,6 @@
 name: Supplement_Revenue_Trainer
 
-# conda_env: conda.yaml
+conda_env: conda.yaml
 
 entry_points:
   main:
