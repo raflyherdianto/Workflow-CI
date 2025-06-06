@@ -50,9 +50,9 @@ jobs:
         IMAGE_NAME="${{ secrets.DOCKERHUB_USERNAME }}/workflow-ci-revenue-predictor:${RUN_ID:0:12}"
         MODEL_URI="mlruns/0/${RUN_ID}/artifacts/${MODEL_FOLDER_NAME}"
         
-        # Periksa apakah direktori model ada sebelum build
         if [ ! -d "$MODEL_URI" ]; then
           echo "Error: Model directory not found at $MODEL_URI"
+          ls -R mlruns
           exit 1
         fi
         
