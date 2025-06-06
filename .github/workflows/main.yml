@@ -33,7 +33,7 @@ jobs:
 
     # 4. Menjalankan MLflow Project untuk melatih model
     - name: Run MLflow Project for Training
-      run: mlflow run MLProject/ --no-conda
+      run: mlflow run MLProject/
 
     # 5. Membaca Run ID dari file untuk digunakan di langkah selanjutnya
     - name: Read Run ID from file
