@@ -1,0 +1,77 @@
+# Nama workflow yang akan tampil di tab Actions GitHub
+name: MLflow CI-CD for Model Training and Docker Push
+
+# Pemicu (trigger) untuk menjalankan workflow
+on:
+  # Berjalan setiap kali ada push ke branch 'main'
+  push:
+    branches: [ main ]
+  # Memungkinkan workflow dijalankan secara manual dari tab Actions
+  workflow_dispatch:
+
+# Daftar pekerjaan (jobs) yang akan dijalankan
+jobs:
+  train-and-build-docker:
+    # Menggunakan mesin virtual Ubuntu terbaru yang disediakan GitHub
+    runs-on: ubuntu-latest
+    
+    # Langkah-langkah yang akan dieksekusi dalam job ini
+    steps:
+    # 1. Mengunduh kode dari repository ke mesin virtual
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    # 2. Menyiapkan environment Python
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.13'
+
+    # 3. Menginstal library Python yang dibutuhkan
+    - name: Install MLflow and dependencies
+      run: pip install mlflow pandas scikit-learn matplotlib
+
+    # 4. Menjalankan MLflow Project untuk melatih model
+    - name: Run MLflow Project for Training
+      run: mlflow run MLProject/
+
+    # 5. Membaca Run ID dari file untuk digunakan di langkah selanjutnya
+    - name: Read Run ID from file
+      id: get_run_id
+      run: echo "RUN_ID=$(cat MLProject/mlflow_run_id.txt)" >> $GITHUB_OUTPUT
+      # Menyimpan run_id sebagai output dari langkah ini
+
+    # 6. Menyimpan hasil run MLflow (log dan metrik) sebagai artifak
+    - name: Store MLflow runs as artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: mlflow-runs-and-id # Nama artifak yang dapat diunduh
+        path: |
+          MLProject/mlruns/
+          MLProject/mlflow_run_id.txt
+        if-no-files-found: error # Gagal jika file tidak ditemukan
+
+    # 7. Login ke Docker Hub menggunakan secrets
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    # 8. Membangun dan Mendorong image Docker ke Docker Hub
+    - name: Build and Push Docker image with MLflow
+      run: |
+        # Mengambil RUN_ID dari output langkah sebelumnya
+        RUN_ID=${{ steps.get_run_id.outputs.RUN_ID }}
+        echo "Building Docker image for Run ID: $RUN_ID"
+        
+        # Menentukan nama image: <username_dockerhub>/<nama_repo_docker>:<tag>
+        # Menggunakan 12 karakter pertama dari RUN_ID sebagai tag agar unik.
+        IMAGE_NAME="${{ secrets.DOCKERHUB_USERNAME }}/workflow-ci-revenue-predictor:${RUN_ID:0:12}"
+        
+        # Perintah MLflow untuk membangun Docker image dari model yang tersimpan
+        # Path ke model URI harus tepat menunjuk ke artifak model di dalam folder mlruns
+        mlflow models build-docker --model-uri "MLProject/mlruns/0/${RUN_ID}/artifacts/tuned_model" --name "$IMAGE_NAME"
+
+        echo "Pushing Docker image: $IMAGE_NAME"
+        docker push "$IMAGE_NAME"
