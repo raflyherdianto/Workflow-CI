@@ -36,7 +36,7 @@ jobs:
       with:
         name: mlflow-runs-and-id
         path: |
-          MLProject/mlruns/
+          mlruns/ # Path ke mlruns di root
           MLProject/mlflow_run_id.txt
         if-no-files-found: error
 
@@ -56,8 +56,7 @@ jobs:
         
         IMAGE_NAME="${{ secrets.DOCKERHUB_USERNAME }}/workflow-ci-revenue-predictor:${RUN_ID:0:12}"
         
-        # Sekarang perintah mlflow akan ditemukan
-        mlflow models build-docker --model-uri "MLProject/mlruns/0/${RUN_ID}/artifacts/${MODEL_FOLDER_NAME}" --name "$IMAGE_NAME"
+        mlflow models build-docker --model-uri "mlruns/0/${RUN_ID}/artifacts/${MODEL_FOLDER_NAME}" --name "$IMAGE_NAME"
 
         echo "Pushing Docker image: $IMAGE_NAME"
         docker push "$IMAGE_NAME"
